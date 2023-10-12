@@ -1,0 +1,108 @@
+﻿@page "/users"
+@using AzureTuto.CosmosDb.Data;
+@using AzureTuto.CosmosDb.Models;
+@inject UserService UserService
+
+<h1>Users</h1>
+
+@if (users == null)
+{
+    <div class="text-center">
+        <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Username</th>
+                <th>GroupID</th>
+                <th>LastModified</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Username</td>
+                    <td>@user.GroupID</td>
+                    <td>@user.LastModified</td>
+                    <td style="cursor:pointer; color:#FF2819"> <span @onclick="(()=>DeleteUser(user.Id))" class="oi oi-trash" aria-hidden="true">Remove</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!users.Any())
+    {
+        <p>No users found</p>
+    }
+}
+
+<hr />
+
+<h3>Add user</h3>
+
+<EditForm OnValidSubmit="AddUser" Model="model">
+    <div class="mb-3 row">
+        <label for="username" class="col-sm-3 col-form-label text-end text-end-no-mobile">Username*</label>
+        <div class="col-sm-8">
+            <InputText class="form-control" id="username" aria-describedby="usernameHelp" required @bind-Value=@model.Username />
+        </div>
+        <div class="col-sm-1 error-asterix">
+            <ValidationMessage For="() => model.Username" />
+        </div>
+    </div>
+    <div class="mb-3 row">
+        <label for="group" class="col-sm-3 col-form-label text-end text-end-no-mobile">Group*</label>
+        <div class="col-sm-8">
+            <select class="form-control" @bind="@model.GroupID">
+                <option value="48c02462-46ac-4989-8de6-1ccb673a3a9f">Group 1</option>
+                <option value="7940551f-3747-4a14-b293-1685bee37ac7">Group 2</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mb-3 text-center">
+        <button type="submit" id="save" name="save" class="btn btn-primary">Add</button>
+    </div>
+</EditForm>
+
+@code {
+
+    private List<User>? users;
+
+    private User model = new User()
+        {
+            GroupID = Guid.Parse("48c02462-46ac-4989-8de6-1ccb673a3a9f")
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task AddUser()
+    {
+        await UserService.AddUserAsync(model);
+        model.Id = Guid.NewGuid();
+        await LoadUsers();
+    }
+
+    private async Task DeleteUser(Guid userId)
+    {
+        await UserService.DeleteUserAsync(userId);
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await UserService.GetUserstAsync();
+    }
+}
